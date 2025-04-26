@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>简单聊天测试</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      padding: 20px;
+    }
+    
+    .login-form {
+      margin-bottom: 20px;
+    }
+    
+    input, button {
+      padding: 8px 12px;
+      margin: 5px 0;
+    }
+    
+    button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    
+    #chatLog {
+      height: 300px;
+      border: 1px solid #ddd;
+      padding: 10px;
+      overflow-y: auto;
+      margin-bottom: 10px;
+    }
+    
+    .message {
+      position: relative;
+      margin-bottom: 15px;
+      padding: 10px;
+      border-radius: 8px;
+      max-width: 80%;
+    }
+    
+    .sent {
+      background-color: #dcf8c6;
+      margin-left: auto;
+      text-align: right;
+    }
+    
+    .received {
+      background-color: #f1f1f1;
+      margin-right: auto;
+    }
+    
+    .message-time {
+      font-size: 0.8em;
+      color: #888;
+      margin-top: 5px;
+    }
+    
+    .message-sender {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    
+    /* 语音通话相关样式 */
+    .call-ui {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+      z-index: 100;
+      display: none;
+    }
+    
+    .call-buttons {
+      margin-top: 20px;
+    }
+    
+    .call-btn {
+      margin: 0 10px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+    }
+    
+    .call-btn.accept {
+      background-color: #4CAF50;
+    }
+    
+    .call-btn.reject {
+      background-color: #f44336;
+    }
+    
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background-color: #333;
+      color: white;
+      padding: 15px;
+      border-radius: 5px;
+      display: none;
+      z-index: 101;
+    }
+    
+    /* 改进界面设计 */
+    .user-info {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px;
+      margin-bottom: 15px;
+      border-radius: 4px;
+      text-align: center;
+    }
+    
+    .contact-container {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 15px;
+    }
+    
+    .contact-header {
+      background-color: #f0f0f0;
+      padding: 8px;
+      margin-bottom: 5px;
+      font-weight: bold;
+      border-radius: 4px 4px 0 0;
+    }
+    
+    .message-controls {
+      display: flex;
+      gap: 5px;
+      margin-top: 10px;
+    }
+    
+    .message-controls button {
+      flex: 1;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .recording-indicator {
+      color: red;
+      font-weight: bold;
+      margin-top: 5px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>聊天客户端</h1>
+    
+    <div class="login-form">
+      <input type="text" id="username" placeholder="请输入用户名">
+      <button id="loginBtn">登录</button>
+    </div>
+    
+    <div id="chatInterface" style="display:none;">
+      <div class="user-info">
+        <h3>当前用户: <span id="currentUsername"></span></h3>
+      </div>
+      
+      <div class="contact-container">
+        <div class="contact-header">在线联系人</div>
+        <select id="contactList" size="5" style="width: 100%"></select>
+        <button id="refreshBtn" style="width: 100%; margin-top: 5px;">刷新联系人列表</button>
+      </div>
+      
+      <div id="chatLog"></div>
+      
+      <div>
+        <input type="text" id="messageInput" placeholder="输入消息" style="width: 100%">
+        
+        <div class="message-controls">
+          <button id="sendBtn">发送</button>
+          <button id="voiceCallBtn">语音通话</button>
+          <button id="voiceMessageBtn">语音消息</button>
+          <button id="fileBtn">发送文件</button>
+        </div>
+        
+        <div id="recordingIndicator" class="recording-indicator">正在录音... <span id="recordingTime">0</span>秒</div>
+        
+        <input type="file" id="fileInput" style="display:none">
+      </div>
+    </div>
+  </div>
+  
+  <!-- 语音通话UI -->
+  <div class="call-ui" id="callUI">
+    <h3>正在与 <span id="callContact"></span> 通话</h3>
+    <p id="callStatus">连接中...</p>
+    <div class="call-buttons">
+      <button id="hangupBtn" class="call-btn reject">挂断</button>
+      <button id="muteBtn" class="call-btn">静音</button>
+    </div>
+  </div>
+  
+  <!-- 来电通知 -->
+  <div class="notification" id="callNotification">
+    <p><span id="callerName"></span> 正在呼叫你</p>
+    <div class="call-buttons">
+      <button id="acceptBtn" class="call-btn accept">接听</button>
+      <button id="rejectBtn" class="call-btn reject">拒绝</button>
+    </div>
+  </div>
+  
+  <!-- 音频元素 -->
+  <audio id="remoteAudio" autoplay></audio>
+  <audio id="ringtone" src="sounds/ringtone.mp3" loop></audio>
+  
+  <script>
+    let ws = null;
+    let myName = "";
+    
+    // 语音消息录制相关变量
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let isRecording = false;
+    let recordingTimer = null;
+    let recordingSeconds = 0;
+    
+    document.getElementById('loginBtn').addEventListener('click', function() {
+      myName = document.getElementById('username').value.trim();
+      if (!myName) {
+        alert('请输入用户名');
+        return;
+      }
+      
+      // 连接WebSocket服务器
+      ws = new WebSocket('ws://www.landtu.top:666');
+      
+      ws.onopen = function() {
+        console.log('连接成功');
+        
+        // 发送登录消息
+        ws.send(JSON.stringify({
+          type: 'login',
+          name: myName
+        }));
+        
+        // 显示聊天界面
+        document.querySelector('.login-form').style.display = 'none';
+        document.getElementById('chatInterface').style.display = 'block';
+        
+        // 显示当前用户名
+        document.getElementById('currentUsername').textContent = myName;
+        
+        // 请求好友列表
+        requestFriendList();
+        
+        // 设置定时刷新好友列表（每30秒）
+        setInterval(requestFriendList, 30000);
+      };
+      
+      ws.onmessage = function(event) {
+        console.log('收到消息:', event.data);
+        try {
+          const data = JSON.parse(event.data);
+          
+          // 处理通话相关消息
+          if (data.type === 'callRequest' && data.from) {
+            handleCallRequest(data.from);
+          } else if (data.type === 'callAccepted' && data.from === callTarget) {
+            document.getElementById('callStatus').textContent = '对方已接听，建立连接中...';
+            document.getElementById('ringtone').pause();
+            document.getElementById('ringtone').currentTime = 0;
+            startCall();
+          } else if (data.type === 'callRejected' && data.from === callTarget) {
+            alert('对方拒绝了通话');
+            endCall();
+          } else if (data.type === 'callEnded' && data.from === callTarget) {
+            alert('对方结束了通话');
+            endCall();
+          } else if (data.type === 'offer' && data.from === callTarget && data.sdp) {
+            handleOffer(data.sdp);
+          } else if (data.type === 'answer' && data.from === callTarget && data.sdp) {
+            handleAnswer(data.sdp);
+          } else if (data.type === 'candidate' && data.from === callTarget && data.candidate) {
+            handleCandidate(data.candidate);
+          } else {
+            // 处理其他消息类型
+            if (data.type === 'friendList' && data.friends) {
+              const contactList = document.getElementById('contactList');
+              contactList.innerHTML = '';
+              
+              data.friends.forEach(function(friend) {
+                const option = document.createElement('option');
+                option.value = friend;
+                option.textContent = friend;
+                contactList.appendChild(option);
+              });
+            } else if (data.type === 'text' && data.from && data.message) {
+              appendMessage(data.from, data.message, false);
+            } else if (data.type === 'voice' && data.from && data.audio) {
+              // 将Base64转回Blob
+              const audioBlob = dataURItoBlob(data.audio);
+              const audioURL = URL.createObjectURL(audioBlob);
+              
+              // 显示语音消息
+              appendVoiceMessage(data.from, audioURL, false);
+            } else if (data.type === 'file' && data.from && data.fileData) {
+              // 将Base64转回Blob
+              const fileBlob = dataURItoBlob(data.fileData);
+              const fileURL = URL.createObjectURL(fileBlob);
+              
+              // 显示文件消息
+              appendFileMessage(data.from, data.fileName, fileURL, data.fileSize, false);
+            }
+          }
+        } catch (e) {
+          console.error('处理WebSocket消息时出错:', e);
+        }
+      };
+      
+      ws.onclose = function() {
+        console.log('连接已关闭');
+        alert('连接已关闭');
+      };
+      
+      ws.onerror = function(error) {
+        console.error('WebSocket错误:', error);
+        alert('连接出错');
+      };
+    });
+    
+    // 单独封装请求好友列表的函数
+    function requestFriendList() {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'getFriendList',
+          from: myName
+        }));
+      }
+    }
+    
+    // 刷新按钮点击事件
+    document.getElementById('refreshBtn').addEventListener('click', requestFriendList);
+    
+    // 发送消息
+    document.getElementById('sendBtn').addEventListener('click', function() {
+      const message = document.getElementById('messageInput').value.trim();
+      const to = document.getElementById('contactList').value;
+      
+      if (!message || !to) {
+        alert('请选择联系人并输入消息');
+        return;
+      }
+      
+      // 发送消息
+      ws.send(JSON.stringify({
+        type: 'text',
+        from: myName,
+        to: to,
+        message: message
+      }));
+      
+      // 在聊天记录中显示
+      appendMessage(myName, message, true);
+      
+      // 清空输入框
+      document.getElementById('messageInput').value = '';
+    });
+    
+    // 添加消息到聊天记录
+    function appendMessage(sender, message, isSent) {
+      const chatLog = document.getElementById('chatLog');
+      const div = document.createElement('div');
+      div.className = 'message ' + (isSent ? 'sent' : 'received');
+      
+      const senderSpan = document.createElement('div');
+      senderSpan.className = 'message-sender';
+      senderSpan.textContent = sender;
+      
+      const contentDiv = document.createElement('div');
+      contentDiv.className = 'message-content';
+      contentDiv.textContent = message;
+      
+      const timeSpan = document.createElement('div');
+      timeSpan.className = 'message-time';
+      timeSpan.textContent = new Date().toLocaleTimeString();
+      
+      div.appendChild(senderSpan);
+      div.appendChild(contentDiv);
+      div.appendChild(timeSpan);
+      
+      chatLog.appendChild(div);
+      
+      // 滚动到底部
+      chatLog.scrollTop = chatLog.scrollHeight;
+      
+      // 如果是收到的消息，播放提示音
+      if (!isSent) {
+        playNotificationSound();
+      }
+    }
+    
+    // WebRTC相关变量
+    let localStream = null;
+    let peerConnection = null;
+    let inCall = false;
+    let callTarget = "";
+    let isMuted = false;
+    
+    // 语音通话功能
+    document.getElementById('voiceCallBtn').addEventListener('click', function() {
+      const contact = document.getElementById('contactList').value;
+      if (!contact) {
+        alert('请选择一个联系人');
+        return;
+      }
+      
+      callTarget = contact;
+      document.getElementById('callContact').textContent = contact;
+      document.getElementById('callStatus').textContent = '等待对方接听...';
+      document.getElementById('callUI').style.display = 'block';
+      
+      // 发送通话请求
+      ws.send(JSON.stringify({
+        type: 'callRequest',
+        from: myName,
+        to: contact
+      }));
+      
+      // 播放铃声
+      document.getElementById('ringtone').play();
+    });
+    
+    // 挂断电话
+    document.getElementById('hangupBtn').addEventListener('click', function() {
+      endCall();
+      
+      // 通知对方通话结束
+      ws.send(JSON.stringify({
+        type: 'callEnded',
+        from: myName,
+        to: callTarget
+      }));
+    });
+    
+    // 静音按钮
+    document.getElementById('muteBtn').addEventListener('click', function() {
+      if (localStream) {
+        const audioTracks = localStream.getAudioTracks();
+        if (audioTracks.length > 0) {
+          isMuted = !isMuted;
+          audioTracks[0].enabled = !isMuted;
+          this.textContent = isMuted ? '取消静音' : '静音';
+        }
+      }
+    });
+    
+    // 接听电话
+    document.getElementById('acceptBtn').addEventListener('click', function() {
+      document.getElementById('callNotification').style.display = 'none';
+      document.getElementById('callUI').style.display = 'block';
+      document.getElementById('callContact').textContent = callTarget;
+      document.getElementById('callStatus').textContent = '连接中...';
+      
+      // 停止铃声
+      document.getElementById('ringtone').pause();
+      document.getElementById('ringtone').currentTime = 0;
+      
+      // 通知对方已接听
+      ws.send(JSON.stringify({
+        type: 'callAccepted',
+        from: myName,
+        to: callTarget
+      }));
+      
+      // 准备WebRTC连接
+      startCall();
+    });
+    
+    // 拒绝电话
+    document.getElementById('rejectBtn').addEventListener('click', function() {
+      document.getElementById('callNotification').style.display = 'none';
+      
+      // 停止铃声
+      document.getElementById('ringtone').pause();
+      document.getElementById('ringtone').currentTime = 0;
+      
+      // 通知对方已拒绝
+      ws.send(JSON.stringify({
+        type: 'callRejected',
+        from: myName,
+        to: callTarget
+      }));
+      
+      callTarget = "";
+    });
+    
+    // 处理通话请求
+    function handleCallRequest(from) {
+      callTarget = from;
+      document.getElementById('callerName').textContent = from;
+      document.getElementById('callNotification').style.display = 'block';
+      
+      // 播放铃声
+      document.getElementById('ringtone').play();
+    }
+    
+    // 处理WebRTC Offer
+    function handleOffer(sdp) {
+      if (!peerConnection) {
+        startCall(false);
+      }
+      
+      // 设置远程描述
+      const offerDesc = new RTCSessionDescription(sdp);
+      
+      peerConnection.setRemoteDescription(offerDesc)
+        .then(() => peerConnection.createAnswer())
+        .then(answer => peerConnection.setLocalDescription(answer))
+        .then(() => {
+          // 发送answer
+          ws.send(JSON.stringify({
+            type: 'answer',
+            from: myName,
+            to: callTarget,
+            sdp: peerConnection.localDescription
+          }));
+          document.getElementById('callStatus').textContent = '已接通，等待媒体连接...';
+        })
+        .catch(error => {
+          console.error('创建answer失败:', error);
+          alert('创建通话应答失败: ' + error.message);
+          endCall();
+        });
+    }
+    
+    // 处理WebRTC Answer
+    function handleAnswer(sdp) {
+      if (!peerConnection) {
+        console.error('收到answer但没有活动的peerConnection');
+        return;
+      }
+      
+      const answerDesc = new RTCSessionDescription(sdp);
+      
+      peerConnection.setRemoteDescription(answerDesc)
+        .then(() => {
+          document.getElementById('callStatus').textContent = '已接通，等待媒体连接...';
+        })
+        .catch(error => {
+          console.error('设置远程描述失败:', error);
+          alert('通话连接失败: ' + error.message);
+          endCall();
+        });
+    }
+    
+    // 处理ICE Candidate
+    function handleCandidate(candidate) {
+      if (!peerConnection) {
+        console.error('收到candidate但没有活动的peerConnection');
+        return;
+      }
+      
+      try {
+        const iceCandidate = new RTCIceCandidate(candidate);
+        peerConnection.addIceCandidate(iceCandidate)
+          .catch(error => {
+            console.error('添加ICE候选失败:', error);
+          });
+      } catch (e) {
+        console.error('处理ICE候选时出错:', e);
+      }
+    }
+    
+    // 修改startCall函数，增加参数表示是否是发起方
+    function startCall(isInitiator = true) {
+      // 创建WebRTC连接
+      const configuration = { 
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' }
+        ] 
+      };
+      
+      try {
+        peerConnection = new RTCPeerConnection(configuration);
+        
+        // 监听ICE候选
+        peerConnection.onicecandidate = function(event) {
+          if (event.candidate) {
+            // 发送ICE候选给对方
+            ws.send(JSON.stringify({
+              type: 'candidate',
+              from: myName,
+              to: callTarget,
+              candidate: event.candidate
+            }));
+          }
+        };
+        
+        // 监听连接状态变化
+        peerConnection.onconnectionstatechange = function(event) {
+          console.log('WebRTC连接状态:', peerConnection.connectionState);
+          if (peerConnection.connectionState === 'connected') {
+            document.getElementById('callStatus').textContent = '通话已连接';
+          } else if (peerConnection.connectionState === 'disconnected' || 
+                    peerConnection.connectionState === 'failed') {
+            alert('通话连接已断开');
+            endCall();
+          }
+        };
+        
+        // 监听远程音频流
+        peerConnection.ontrack = function(event) {
+          const remoteAudio = document.getElementById('remoteAudio');
+          if (remoteAudio.srcObject !== event.streams[0]) {
+            console.log('收到远程音频流');
+            remoteAudio.srcObject = event.streams[0];
+            document.getElementById('callStatus').textContent = '通话中';
+          }
+        };
+        
+        // 获取麦克风权限
+        navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+          .then(function(stream) {
+            localStream = stream;
+            
+            // 添加本地音频流到连接
+            localStream.getTracks().forEach(track => {
+              peerConnection.addTrack(track, stream);
+            });
+            
+            // 如果是发起方，创建并发送offer
+            if (isInitiator) {
+              peerConnection.createOffer({
+                offerToReceiveAudio: true,
+                offerToReceiveVideo: false
+              })
+                .then(offer => peerConnection.setLocalDescription(offer))
+                .then(() => {
+                  // 发送offer给对方
+                  ws.send(JSON.stringify({
+                    type: 'offer',
+                    from: myName,
+                    to: callTarget,
+                    sdp: peerConnection.localDescription
+                  }));
+                  document.getElementById('callStatus').textContent = '正在等待对方接听...';
+                })
+                .catch(error => {
+                  console.error('创建offer失败:', error);
+                  alert('创建通话请求失败: ' + error.message);
+                  endCall();
+                });
+            }
+            
+            inCall = true;
+          })
+          .catch(function(error) {
+            console.error('获取麦克风失败:', error);
+            alert('无法获取麦克风权限: ' + error.message);
+            endCall();
+          });
+      } catch (e) {
+        console.error('启动WebRTC连接时出错:', e);
+        alert('启动通话失败: ' + e.message);
+        endCall();
+      }
+    }
+    
+    // 结束通话
+    function endCall() {
+      // 停止铃声
+      document.getElementById('ringtone').pause();
+      document.getElementById('ringtone').currentTime = 0;
+      
+      // 关闭UI
+      document.getElementById('callUI').style.display = 'none';
+      document.getElementById('callNotification').style.display = 'none';
+      
+      // 关闭音频流
+      if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+        localStream = null;
+      }
+      
+      // 关闭WebRTC连接
+      if (peerConnection) {
+        peerConnection.close();
+        peerConnection = null;
+      }
+      
+      inCall = false;
+      callTarget = "";
+      isMuted = false;
+    }
+    
+    // 语音消息按钮事件
+    document.getElementById('voiceMessageBtn').addEventListener('click', function() {
+      if (isRecording) {
+        stopRecording();
+      } else {
+        startRecording();
+      }
+    });
+    
+    // 开始录音
+    function startRecording() {
+      // 确保选择了联系人
+      const contact = document.getElementById('contactList').value;
+      if (!contact) {
+        alert('请选择一个联系人');
+        return;
+      }
+      
+      // 清空之前的录音
+      audioChunks = [];
+      recordingSeconds = 0;
+      
+      // 显示录音指示器
+      const recordingIndicator = document.getElementById('recordingIndicator');
+      recordingIndicator.style.display = 'block';
+      
+      // 开始计时
+      recordingTimer = setInterval(() => {
+        recordingSeconds++;
+        document.getElementById('recordingTime').textContent = recordingSeconds;
+        
+        // 限制最长录音时间为60秒
+        if (recordingSeconds >= 60) {
+          stopRecording();
+        }
+      }, 1000);
+      
+      // 请求麦克风权限
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+          mediaRecorder = new MediaRecorder(stream);
+          
+          // 收集音频数据
+          mediaRecorder.addEventListener('dataavailable', function(event) {
+            audioChunks.push(event.data);
+          });
+          
+          // 录音完成后处理
+          mediaRecorder.addEventListener('stop', function() {
+            // 将音频块合并为Blob
+            const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+            
+            // 只有当有音频数据时才发送
+            if (audioChunks.length > 0 && audioBlob.size > 0) {
+              // 发送语音消息
+              sendVoiceMessage(audioBlob);
+            }
+            
+            // 关闭麦克风
+            stream.getTracks().forEach(track => track.stop());
+            
+            // 隐藏录音指示器
+            recordingIndicator.style.display = 'none';
+            
+            // 清除计时器
+            clearInterval(recordingTimer);
+            recordingTimer = null;
+          });
+          
+          // 开始录音
+          mediaRecorder.start();
+          isRecording = true;
+          document.getElementById('voiceMessageBtn').textContent = '停止录制';
+        })
+        .catch(error => {
+          console.error('获取麦克风失败:', error);
+          alert('无法获取麦克风权限: ' + error.message);
+          recordingIndicator.style.display = 'none';
+          clearInterval(recordingTimer);
+        });
+    }
+    
+    // 停止录音
+    function stopRecording() {
+      if (mediaRecorder && isRecording) {
+        mediaRecorder.stop();
+        isRecording = false;
+        document.getElementById('voiceMessageBtn').textContent = '语音消息';
+        
+        // 停止计时
+        clearInterval(recordingTimer);
+        
+        // 隐藏录音指示器
+        document.getElementById('recordingIndicator').style.display = 'none';
+      }
+    }
+    
+    // 发送语音消息
+    function sendVoiceMessage(audioBlob) {
+      const contact = document.getElementById('contactList').value;
+      
+      // 创建一个临时URL以便播放
+      const audioURL = URL.createObjectURL(audioBlob);
+      
+      // 转换为Base64以便通过WebSocket发送
+      const reader = new FileReader();
+      reader.readAsDataURL(audioBlob);
+      reader.onloadend = function() {
+        const base64Audio = reader.result;
+        
+        // 发送语音消息
+        ws.send(JSON.stringify({
+          type: 'voice',
+          from: myName,
+          to: contact,
+          audio: base64Audio
+        }));
+        
+        // 在聊天记录中显示
+        appendVoiceMessage(myName, audioURL, true);
+      };
+    }
+    
+    // 添加语音消息到聊天记录
+    function appendVoiceMessage(sender, audioURL, isSent) {
+      const chatLog = document.getElementById('chatLog');
+      const div = document.createElement('div');
+      div.className = 'message ' + (isSent ? 'sent' : 'received');
+      
+      const senderSpan = document.createElement('div');
+      senderSpan.className = 'message-sender';
+      senderSpan.textContent = sender;
+      
+      const contentDiv = document.createElement('div');
+      contentDiv.className = 'message-content';
+      
+      // 创建音频元素
+      const audio = document.createElement('audio');
+      audio.controls = true;
+      audio.src = audioURL;
+      
+      contentDiv.textContent = '语音消息: ';
+      contentDiv.appendChild(audio);
+      
+      const timeSpan = document.createElement('div');
+      timeSpan.className = 'message-time';
+      timeSpan.textContent = new Date().toLocaleTimeString();
+      
+      div.appendChild(senderSpan);
+      div.appendChild(contentDiv);
+      div.appendChild(timeSpan);
+      
+      chatLog.appendChild(div);
+      chatLog.scrollTop = chatLog.scrollHeight;
+      
+      // 如果是收到的消息，播放提示音
+      if (!isSent) {
+        playNotificationSound();
+      }
+    }
+    
+    // 文件选择事件
+    document.getElementById('fileBtn').addEventListener('click', function() {
+      document.getElementById('fileInput').click();
+    });
+    
+    // 文件选择后处理
+    document.getElementById('fileInput').addEventListener('change', function(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      // 确保选择了联系人
+      const contact = document.getElementById('contactList').value;
+      if (!contact) {
+        alert('请选择一个联系人');
+        return;
+      }
+      
+      // 限制文件大小（5MB）
+      if (file.size > 5 * 1024 * 1024) {
+        alert('文件大小不能超过5MB');
+        return;
+      }
+      
+      // 读取文件为Base64
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = function() {
+        // 发送文件消息
+        ws.send(JSON.stringify({
+          type: 'file',
+          from: myName,
+          to: contact,
+          fileName: file.name,
+          fileSize: file.size,
+          fileData: reader.result
+        }));
+        
+        // 创建本地URL用于显示
+        const fileURL = URL.createObjectURL(file);
+        
+        // 显示文件消息
+        appendFileMessage(myName, file.name, fileURL, file.size, true);
+      };
+      
+      // 清空文件输入框，允许再次选择同一文件
+      this.value = '';
+    });
+    
+    // 添加文件消息到聊天记录
+    function appendFileMessage(sender, fileName, fileURL, fileSize, isSent) {
+      const chatLog = document.getElementById('chatLog');
+      const div = document.createElement('div');
+      div.className = 'message ' + (isSent ? 'sent' : 'received');
+      
+      const senderSpan = document.createElement('div');
+      senderSpan.className = 'message-sender';
+      senderSpan.textContent = sender;
+      
+      const contentDiv = document.createElement('div');
+      contentDiv.className = 'message-content';
+      
+      // 格式化文件大小
+      const formattedSize = formatFileSize(fileSize);
+      
+      // 创建文件链接
+      const fileLink = document.createElement('a');
+      fileLink.href = fileURL;
+      fileLink.download = fileName;
+      fileLink.textContent = `下载 ${fileName} (${formattedSize})`;
+      fileLink.style.color = '#0066cc';
+      fileLink.style.textDecoration = 'underline';
+      
+      contentDiv.textContent = '文件: ';
+      contentDiv.appendChild(fileLink);
+      
+      const timeSpan = document.createElement('div');
+      timeSpan.className = 'message-time';
+      timeSpan.textContent = new Date().toLocaleTimeString();
+      
+      div.appendChild(senderSpan);
+      div.appendChild(contentDiv);
+      div.appendChild(timeSpan);
+      
+      chatLog.appendChild(div);
+      chatLog.scrollTop = chatLog.scrollHeight;
+      
+      // 如果是收到的消息，播放提示音
+      if (!isSent) {
+        playNotificationSound();
+      }
+    }
+    
+    // 工具函数：将Base64数据转换为Blob对象
+    function dataURItoBlob(dataURI) {
+      // 分离MIME类型和数据部分
+      const byteString = atob(dataURI.split(',')[1]);
+      const mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
+      
+      // 将二进制字符串转换为ArrayBuffer
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+      for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+      }
+      
+      return new Blob([ab], { type: mimeString });
+    }
+    
+    // 工具函数：格式化文件大小
+    function formatFileSize(bytes) {
+      if (bytes < 1024) return bytes + ' bytes';
+      else if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+      else return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+    }
+    
+    // 播放通知声音
+    function playNotificationSound() {
+      try {
+        const audio = new Audio('data:audio/mp3;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTcuODMuMTAwAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsRbAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQMSkAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV');
+        audio.play();
+      } catch (e) {
+        console.error('播放通知声音失败:', e);
+      }
+    }
+    
+    // 回车键发送消息
+    document.getElementById('messageInput').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        document.getElementById('sendBtn').click();
+      }
+    });
+    
+    // 首次加载页面时，焦点设置在用户名输入框
+    document.getElementById('username').focus();
+    
+    // 清除所有以前的WebRTC连接
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+          stream.getTracks().forEach(track => track.stop());
+        })
+        .catch(e => console.log('初始麦克风检查:', e));
+    }
+  </script>
+</body>
+</html> 

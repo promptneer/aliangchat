@@ -1,0 +1,317 @@
+/* 全局样式 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Microsoft YaHei', sans-serif;
+}
+
+body {
+  background-color: #333;
+  color: #f0f0f0;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* 登录界面样式 */
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #333;
+}
+
+.login-box {
+  background-color: #fff;
+  padding: 30px;
+  border-radius: 8px;
+  width: 300px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.login-title {
+  margin-bottom: 20px;
+  color: #333;
+  font-size: 20px;
+}
+
+.login-input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 20px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+  outline: none;
+}
+
+.login-input:focus {
+  border-color: #4CAF50;
+}
+
+.login-btn {
+  width: 100%;
+  padding: 12px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s;
+}
+
+.login-btn:hover {
+  background-color: #45a049;
+}
+
+/* 主界面样式 */
+.app-container {
+  /* 确保主应用容器在显示时采用flex布局 */
+  #appContainer {
+    display: flex;
+    height: 100vh;
+    width: 100%;
+  }
+  
+  /* 侧边栏样式 */
+  .sidebar {
+    width: 250px;
+    background-color: #2c2c2c;
+    color: #f0f0f0;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid #444;
+  }
+  
+  /* 聊天区域样式 */
+  .chat-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: #333;
+  }
+}
+
+.chat-header {
+  padding: 15px;
+  background-color: #252525;
+  border-bottom: 1px solid #444;
+}
+
+.chat-title {
+  font-weight: bold;
+  font-size: 16px;
+  color: #f0f0f0;
+}
+
+.chat-log {
+  flex: 1;
+  padding: 15px;
+  overflow-y: auto;
+  background-color: #333;
+}
+
+.chat-input-area {
+  padding: 15px;
+  background-color: #252525;
+  border-top: 1px solid #444;
+  display: flex;
+  flex-direction: column;
+}
+
+.toolbar {
+  margin-bottom: 10px;
+  display: flex;
+}
+
+.toolbar button {
+  background: none;
+  border: none;
+  font-size: 20px;
+  margin-right: 15px;
+  cursor: pointer;
+  color: #aaa;
+  transition: color 0.2s;
+}
+
+.toolbar button:hover {
+  color: #4CAF50;
+}
+
+.input-container {
+  flex: 1;
+  margin-bottom: 10px;
+}
+
+textarea {
+  width: 100%;
+  height: 80px;
+  padding: 10px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  resize: none;
+  font-size: 14px;
+  background-color: #3a3a3a;
+  color: #f0f0f0;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: #4CAF50;
+}
+
+.send-btn-container {
+  display: flex;
+  justify-content: flex-end;
+}
+
+#sendBtn {
+  padding: 8px 20px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+#sendBtn:hover {
+  background-color: #45a049;
+}
+
+/* 消息样式 */
+.message {
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  max-width: 70%;
+}
+
+.message-self {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.message-other {
+  align-self: flex-start;
+  align-items: flex-start;
+}
+
+.message-info {
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.message-avatar {
+  width: 30px;
+  height: 30px;
+  background-color: #4CAF50;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 14px;
+}
+
+.message-self .message-avatar {
+  background-color: #2196F3;
+}
+
+.message-time {
+  font-size: 12px;
+  color: #aaa;
+  margin-bottom: 5px;
+}
+
+.message-content {
+  padding: 10px;
+  border-radius: 8px;
+  background-color: #3a3a3a;
+  word-break: break-word;
+  color: #f0f0f0;
+}
+
+.message-self .message-content {
+  background-color: #2196F3;
+  color: white;
+}
+
+.message-system {
+  text-align: center;
+  margin: 10px 0;
+  font-size: 12px;
+  color: #aaa;
+}
+
+/* 语音消息样式 */
+.voice-message {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 5px 10px;
+}
+
+.voice-icon {
+  margin-right: 10px;
+  font-size: 18px;
+}
+
+/* 文件消息样式 */
+.file-message {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 5px 10px;
+}
+
+.file-icon {
+  margin-right: 10px;
+  font-size: 18px;
+}
+
+.file-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.file-name {
+  font-weight: bold;
+  margin-bottom: 3px;
+}
+
+.file-size {
+  font-size: 12px;
+  color: #aaa;
+}
+
+.message-self .file-size {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #333;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}
